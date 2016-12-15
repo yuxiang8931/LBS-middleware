@@ -1,4 +1,4 @@
-package com.aut.yuxiang.lbs_middleware.Utils;
+package com.aut.yuxiang.lbs_middleware.lbs_utils;
 
 /**
  * Created by yuxiang on 8/12/16.

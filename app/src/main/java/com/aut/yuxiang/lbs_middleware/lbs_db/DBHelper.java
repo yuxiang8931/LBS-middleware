@@ -1,4 +1,4 @@
-package com.aut.yuxiang.lbs_middleware.db;
+package com.aut.yuxiang.lbs_middleware.lbs_db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
@@ -20,11 +20,15 @@ public class DBHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL(SQL.CREATE_TABLE_ACCELEROMETER_READINGS);
+        sqLiteDatabase.execSQL(SQL.CREATE_TABLE_GPS_READINGS);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         sqLiteDatabase.execSQL(SQL.DROP_TABLE_ACCELEROMETER_READINGS);
         sqLiteDatabase.execSQL(SQL.CREATE_TABLE_ACCELEROMETER_READINGS);
+
+        sqLiteDatabase.execSQL(SQL.DROP_TABLE_GPS_READINGS);
+        sqLiteDatabase.execSQL(SQL.CREATE_TABLE_GPS_READINGS);
     }
 }

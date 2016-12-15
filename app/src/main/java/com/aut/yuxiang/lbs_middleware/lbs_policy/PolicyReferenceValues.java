@@ -1,4 +1,4 @@
-package com.aut.yuxiang.lbs_middleware.lbs_policies;
+package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
 /**
  * Created by yuxiang on 8/12/16.
@@ -6,18 +6,19 @@ package com.aut.yuxiang.lbs_middleware.lbs_policies;
 
 public class PolicyReferenceValues {
     public static long acceptedIntervalForNewLocation;
+    public static long acceptedIntervalForNewMotion = acceptedIntervalForNewLocation/5;
 
     public static enum Accuracy {
         HIGH_LEVEL_ACCURACY, LOW_LEVEL_ACCURACY, SHUTTER_PRIORITY
     }
 
+    public static long accelerometerInterval = acceptedIntervalForNewLocation/5;
     public static final long ACCELEROMETER_RUNNING_PERIOD = 2 * 1000;
-    public static long accelerometerInterval = 3 * 1000;
     public boolean isGPSAvailable;
     public boolean isWIFIAvailable;
     public boolean isAccelerometerAvailable;
     public boolean isCellTowerAvailable;
-    Accuracy accuracy;
+    public Accuracy accuracy;
 
     public PolicyReferenceValues() {
 

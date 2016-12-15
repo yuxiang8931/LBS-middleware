@@ -1,4 +1,4 @@
-package com.aut.yuxiang.lbs_middleware.lbs_policies;
+package com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper;
 
 import android.content.Context;
 import android.hardware.Sensor;
@@ -9,7 +9,8 @@ import android.net.NetworkInfo;
 import android.telephony.TelephonyManager;
 import android.telephony.gsm.GsmCellLocation;
 
-import com.aut.yuxiang.lbs_middleware.Utils.LogHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 /**
  * Created by yuxiang on 8/12/16.
@@ -48,7 +49,7 @@ public class ProviderUsabilityDetector {
         return location != null;
     }
 
-    protected PolicyReferenceValues getProviderUsability(PolicyReferenceValues policyReferenceValues) {
+    protected PolicyReferenceValues detectProviderUsability(PolicyReferenceValues policyReferenceValues) {
         boolean isGPSAvailable = getGPSUsability();
         boolean isWIFIAvailable = getWifiUsability();
         boolean isAccelerometerAvailable = getAccelerometerUsability();

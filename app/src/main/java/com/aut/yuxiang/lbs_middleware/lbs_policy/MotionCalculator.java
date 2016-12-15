@@ -1,6 +1,6 @@
-package com.aut.yuxiang.lbs_middleware.lbs_policies;
+package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
-import com.aut.yuxiang.lbs_middleware.Utils.LogHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 import java.util.ArrayList;
 import java.util.Queue;
@@ -46,9 +46,6 @@ public class MotionCalculator {
         // increase 1, decrease -1
         int previousTend = 0;
         int tend = 0;
-        for (float value : magnitudeArray) {
-            LogHelper.showLog(TAG, value);
-        }
         for (int i = 1; i < magnitudeArray.size() - 1; i++) {
             float currentMagnitude = magnitudeArray.get(i);
             float nextMagnitude = magnitudeArray.get(i + 1);
@@ -58,7 +55,6 @@ public class MotionCalculator {
                 tend = -1;
             }
             if (tend != previousTend && previousTend != 0) {
-                LogHelper.showLog(TAG, "point:  " + currentMagnitude);
                 sum += currentMagnitude;
             }
             previousTend = tend;

@@ -1,10 +1,10 @@
-package com.aut.yuxiang.lbs_middleware.lbs_policies;
+package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
 import android.location.GnssStatus;
 import android.os.Build.VERSION_CODES;
 import android.support.annotation.RequiresApi;
 
-import com.aut.yuxiang.lbs_middleware.Utils.LogHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 
 /**

@@ -1,8 +1,10 @@
-package com.aut.yuxiang.lbs_middleware.lbs_policies;
+package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -12,15 +14,18 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.IBinder;
 
-import com.aut.yuxiang.lbs_middleware.Utils.LogHelper;
-import com.aut.yuxiang.lbs_middleware.lbs_policies.MotionDetectionService.MotionCalculateListener;
-import com.aut.yuxiang.lbs_middleware.lbs_policies.MotionDetectionService.MotionDetectionBinder;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
+import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.Mechanism;
+import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.ScenarioAdapter;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.MotionDetectionService.MotionCalculateListener;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.MotionDetectionService.MotionDetectionBinder;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static com.aut.yuxiang.lbs_middleware.lbs_policies.PolicyReferenceValues.ACCELEROMETER_RUNNING_PERIOD;
-import static com.aut.yuxiang.lbs_middleware.lbs_policies.PolicyReferenceValues.accelerometerInterval;
+import static com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues.ACCELEROMETER_RUNNING_PERIOD;
+import static com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues.accelerometerInterval;
 
 /**
  * Created by yuxiang on 8/12/16.
@@ -31,6 +36,9 @@ public class LBSPolicy {
     private static final String LBS_PREFERENCES = "lbs_preferences";
     private static final String LBS_PRE_TIME = "lbs_timestamp";
     private static final long LBS_PRE_DEFAULT = -1;
+    private static final String MOTION_DETECTION_RESULT_RECEIVER = "com.lbs.motion_result_broadcast";
+    private static final String IS_MOVED_KEY = "isMoved";
+    private static final String MOVE_TIME_KEY = "move_time";
     private Context context;
     private PolicyReferenceValues policyReferenceValues;
     private LocationManager locationManager;
@@ -41,43 +49,104 @@ public class LBSPolicy {
     private MotionDetectionService motionDetectionService;
     private Timer accelerometerStopTimer;
     private Timer accelerometerDetectionRepeatTimer;
-    Intent intent;
+    private ScenarioAdapter scenarioAdapter;
+    private Mechanism currentMechanism;
+    private boolean motionServiceRunning;
+    private Intent motionDetectionResult;
+    private BroadcastReceiver motionResultBroadcastReceiver;
+    private Intent motionResultReceiverIntent;
+
+    class MotionDetectionResultsReceiver extends BroadcastReceiver {
+        private LBSLocationListener listener;
+
+        public MotionDetectionResultsReceiver(LBSLocationListener listener) {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction() == MOTION_DETECTION_RESULT_RECEIVER) {
+                boolean isMove = intent.getBooleanExtra(IS_MOVED_KEY, false);
+                if (isMove) {
+                    LogHelper.showLog(TAG, "Moving");
+                    currentMechanism = scenarioAdapter.runMechanism(false, listener, policyReferenceValues);
+                    if (currentMechanism == null) {
+                        listener.onLocationUpdated(null);
+                    }
+                } else {
+                    LogHelper.showLog(TAG, "Stationary");
+                    Location currentLocation;
+                    if ((currentLocation = getCachedLocation()) != null) {
+                        listener.onLocationUpdated(currentLocation);
+                    }
+                }
+            }
+        }
+    }
 
     public LBSPolicy(Context context, PolicyReferenceValues values) {
         this.context = context;
-        intent = new Intent(context.getApplicationContext(), MotionDetectionService.class);
+        motionDetectionResult = new Intent(context.getApplicationContext(), MotionDetectionService.class);
+        motionResultReceiverIntent = new Intent(MOTION_DETECTION_RESULT_RECEIVER);
         policyReferenceValues = values;
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         motionListener = new MotionAccelerometerListener();
+        scenarioAdapter = new ScenarioAdapter(context);
         motionDetectionServiceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
                 motionDetectionService = ((MotionDetectionBinder) iBinder).getService();
                 LogHelper.showLog(TAG, "onServiceConnected");
                 startPeriodicAccelerometerSensor();
+                motionServiceRunning = true;
             }
 
             @Override
             public void onServiceDisconnected(ComponentName componentName) {
                 LogHelper.showLog(TAG, "onServiceDisconnected");
-//                stopPeriodicAccelerometerSensor();
                 startDetectingMotion();
             }
         };
+
     }
 
-    public Location getCurrentLocation() {
+    public void getCurrentLocation(LBSLocationListener listener) {
         Location currentLocation;
         if (checkMotion() || (currentLocation = getCachedLocation()) == null) {
             LogHelper.showLog(TAG, "Get mechanism Location");
-            return null;
+            if (scenarioAdapter.runMechanism(true, listener, policyReferenceValues) == null) {
+                listener.onLocationUpdated(null);
+            }
         } else {
             LogHelper.showLog(TAG, "Get cached Location");
-            return currentLocation;
+            listener.onLocationUpdated(currentLocation);
         }
     }
+
+    public void getMechanismLocation(LBSLocationListener listener) {
+        currentMechanism = scenarioAdapter.runMechanism(true, listener, policyReferenceValues);
+        if (currentMechanism == null) {
+            listener.onLocationUpdated(null);
+        }
+    }
+
+    public void getContinuouslyLocation(LBSLocationListener listener) {
+        if (motionResultBroadcastReceiver == null) {
+            LogHelper.showLog(TAG, "getContinuouslyLocation");
+            IntentFilter filter = new IntentFilter(MOTION_DETECTION_RESULT_RECEIVER);
+            motionResultBroadcastReceiver = new MotionDetectionResultsReceiver(listener);
+            context.registerReceiver(motionResultBroadcastReceiver, filter);
+        }
+    }
+
+    public void stopContinuousLocation() {
+        context.unregisterReceiver(motionResultBroadcastReceiver);
+        motionResultBroadcastReceiver = null;
+        scenarioAdapter.stopMechanism();
+    }
+
 
     public void startDetectingMotion() {
         // connect to accelerometer motion algorithm
@@ -86,9 +155,18 @@ public class LBSPolicy {
     }
 
     public void stopDetectingMotion() {
-        context.unbindService(motionDetectionServiceConnection);
-        stopPeriodicAccelerometerSensor();
+        if (motionServiceRunning) {
+            context.unbindService(motionDetectionServiceConnection);
+            stopPeriodicAccelerometerSensor();
 //        context.stopService(intent);
+        }
+        motionServiceRunning = false;
+    }
+
+    private void sendMotionResult(boolean isMoved, long moveTime) {
+        motionResultReceiverIntent.putExtra(IS_MOVED_KEY, isMoved);
+        motionResultReceiverIntent.putExtra(MOVE_TIME_KEY, moveTime);
+        context.sendBroadcast(motionResultReceiverIntent);
     }
 
     private void bindAccelerometerMotionAlgorithmService() {
@@ -103,15 +181,13 @@ public class LBSPolicy {
                                             @Override
                                             public void run() {
                                                 accelerometerStopTimer.cancel();
-                                                LogHelper.showLog(TAG, "Stop Sensor.");
+//                                                LogHelper.showLog(TAG, "Stop Sensor.");
                                                 stopPeriodicAccelerometerSensor();
                                                 motionDetectionService.startCalculate(new MotionCalculateListener() {
                                                     @Override
                                                     public void onCalculatorFinish(boolean isMoved, long startTime) {
-                                                        LogHelper.showLog(TAG, "onCalculatorFinish");
-                                                        Intent intent = new Intent(context.getPackageName()+".movement");
-                                                        intent.putExtra("status", isMoved?"moving":"stationary");
-                                                        context.sendBroadcast(intent);
+//                                                        LogHelper.showLog(TAG, "onCalculatorFinish");
+                                                        sendMotionResult(isMoved, startTime);
                                                         motionDetectionService.clearBuffer();
                                                         saveLatestMovementTimeStamp(startTime);
                                                         accelerometerDetectionRepeatTimer = new Timer();
@@ -128,6 +204,10 @@ public class LBSPolicy {
                                             }
                                         }
                 , ACCELEROMETER_RUNNING_PERIOD);
+    }
+
+    private void sendMotionDetails(boolean isMoved, long startTime) {
+
     }
 
     private void stopPeriodicAccelerometerSensor() {
@@ -161,7 +241,7 @@ public class LBSPolicy {
         if (timeStamp == LBS_PRE_DEFAULT) {
             return false;
         }
-        if (System.currentTimeMillis() - timeStamp > policyReferenceValues.acceptedIntervalForNewLocation) {
+        if (System.currentTimeMillis() - timeStamp > policyReferenceValues.acceptedIntervalForNewMotion) {
             return true;
         }
         return false;
@@ -256,6 +336,7 @@ public class LBSPolicy {
 
     class MotionAccelerometerListener implements SensorEventListener {
         float[] gravity = new float[3];
+
         @Override
         public void onSensorChanged(SensorEvent event) {
 
@@ -283,6 +364,10 @@ public class LBSPolicy {
         public void onAccuracyChanged(Sensor sensor, int i) {
 
         }
+    }
+
+    public void setPolicyReferenceValues(PolicyReferenceValues policyReferenceValues) {
+        this.policyReferenceValues = policyReferenceValues;
     }
 
 }

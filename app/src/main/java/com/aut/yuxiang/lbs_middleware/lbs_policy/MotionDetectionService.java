@@ -1,11 +1,11 @@
-package com.aut.yuxiang.lbs_middleware.lbs_policies;
+package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 
-import com.aut.yuxiang.lbs_middleware.Utils.LogHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -98,7 +98,7 @@ public class MotionDetectionService extends Service {
                     if (buffer != null&& buffer.size()>0) {
                         boolean isMoved = motionCalculator.calculateMotion(buffer);
                         listener.onCalculatorFinish(isMoved, System.currentTimeMillis());
-                        LogHelper.showLog(TAG, "buffer is cleared!");
+//                        LogHelper.showLog(TAG, "buffer is cleared!");
                     } else {
                         listener.onCalculatorFinish(false, -1);
                     }
