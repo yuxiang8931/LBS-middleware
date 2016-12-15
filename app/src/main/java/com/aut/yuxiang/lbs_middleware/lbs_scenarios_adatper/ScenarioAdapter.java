@@ -2,8 +2,8 @@ package com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper;
 
 import android.content.Context;
 
+import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.Mechanism;
 import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.MechanismManager;
-import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
 import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
@@ -55,7 +55,7 @@ public class ScenarioAdapter {
         switch (values.accuracy) {
             case HIGH_LEVEL_ACCURACY:
                 if (values.isGPSAvailable) {
-                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener, usabilityListener, MechanismManager.GPS_MECHANISM);
+                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener, usabilityListener, MechanismManager.GPS_MECHANISM, values);
                 } else if (values.isCellTowerAvailable) {
 
                 }
@@ -88,7 +88,6 @@ public class ScenarioAdapter {
             if (oneTime) {
                 currentMechanism.startMechanismOneTime();
             } else {
-                LBS.getInstance().stopDetect();
                 currentMechanism.startMechanism();
             }
         }

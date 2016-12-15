@@ -1,7 +1,5 @@
 package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
-import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
-
 import java.util.ArrayList;
 import java.util.Queue;
 
@@ -60,7 +58,6 @@ public class MotionCalculator {
             previousTend = tend;
 
         }
-        LogHelper.showLog(TAG, "SUM: "+sum);
         return sum;
     }
 

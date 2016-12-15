@@ -1,4 +1,4 @@
-package com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper;
+package com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager;
 
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 

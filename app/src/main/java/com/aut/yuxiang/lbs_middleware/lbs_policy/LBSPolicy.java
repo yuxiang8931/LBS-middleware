@@ -15,7 +15,7 @@ import android.location.LocationManager;
 import android.os.IBinder;
 
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
-import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.Mechanism;
+import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.Mechanism;
 import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.ScenarioAdapter;
 import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.MotionDetectionService.MotionCalculateListener;
@@ -158,7 +158,10 @@ public class LBSPolicy {
         if (motionServiceRunning) {
             context.unbindService(motionDetectionServiceConnection);
             stopPeriodicAccelerometerSensor();
+            LogHelper.showLog(TAG, "stopDection suc");
 //        context.stopService(intent);
+        } else {
+            LogHelper.showLog(TAG, "stopDection fail");
         }
         motionServiceRunning = false;
     }
@@ -212,16 +215,10 @@ public class LBSPolicy {
 
     private void stopPeriodicAccelerometerSensor() {
         stopAccelerometerSensor();
-        try {
-            accelerometerStopTimer.cancel();
-        } catch (Exception e) {
-
-        }
-
-        try {
+        accelerometerStopTimer.cancel();
+        if (accelerometerDetectionRepeatTimer!=null)
+        {
             accelerometerDetectionRepeatTimer.cancel();
-        } catch (Exception e) {
-
         }
     }
 
