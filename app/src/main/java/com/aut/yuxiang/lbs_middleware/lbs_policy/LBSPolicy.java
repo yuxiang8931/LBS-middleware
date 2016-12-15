@@ -209,10 +209,6 @@ public class LBSPolicy {
                 , ACCELEROMETER_RUNNING_PERIOD);
     }
 
-    private void sendMotionDetails(boolean isMoved, long startTime) {
-
-    }
-
     private void stopPeriodicAccelerometerSensor() {
         stopAccelerometerSensor();
         accelerometerStopTimer.cancel();
