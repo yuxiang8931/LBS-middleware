@@ -31,8 +31,14 @@ public class GPSMechanism extends Mechanism {
     private boolean running = false;
     private static final int LATEST_LOCATIONS_NUMBER = 5;
     private static final long ACCEPTED_LOCATION_TIME = 20 * 1000;
+    private static final double EARTH_RADIUS = 6376.5*1000;
     private Context context;
     private PolicyReferenceValues values;
+
+    public GPSMechanism() {
+    }
+
+
 
     public GPSMechanism(Context context, final LBSLocationListener listener, final AdapterProviderUsabilityListener usabilityListener, PolicyReferenceValues values) {
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
@@ -194,7 +200,26 @@ public class GPSMechanism extends Mechanism {
     }
 
     private double getDistance(Location firstLocation, Location secondLocation) {
-        return 0;
+        if (firstLocation == null || secondLocation == null){
+            System.out.println("invalid location message");
+            return 0;
+        }
+        double long1, long2, lati1,lati2;
+        long1  = firstLocation.getLongitude()*Math.PI/180;
+        lati1 = firstLocation.getLatitude()*Math.PI/180;
+        long2 = secondLocation.getLongitude()*Math.PI/180;
+        lati2 = secondLocation.getAltitude()*Math.PI/180;
+        double temp;
+        temp = Math.cos(lati1)*Math.cos(lati2)* Math.cos(long1-long2)+Math.sin(lati1)*Math.sin(lati2);
+        double distance = EARTH_RADIUS * Math.acos(temp);
+        System.out.println("my distance" + distance);
+        double distance1 = firstLocation.distanceTo(secondLocation);
+//        float[] result = new float[3];
+//        Location.distanceBetween(long1,lati1,long2,lati2,result);
+
+        System.out.println("system distance:" + distance1);
+
+        return distance;
     }
 
 
