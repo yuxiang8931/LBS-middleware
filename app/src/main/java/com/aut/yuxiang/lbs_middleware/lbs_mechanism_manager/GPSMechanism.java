@@ -199,11 +199,13 @@ public class GPSMechanism extends Mechanism {
         return result;
     }
 
-    private double getDistance(Location firstLocation, Location secondLocation) {
+    public double getDistance(Location firstLocation, Location secondLocation) {
         if (firstLocation == null || secondLocation == null){
             System.out.println("invalid location message");
             return 0;
         }
+        double distance = 0;
+        //我们的算法：假设地球是一个球体
         double long1, long2, lati1,lati2;
         long1  = firstLocation.getLongitude()*Math.PI/180;
         lati1 = firstLocation.getLatitude()*Math.PI/180;
@@ -211,13 +213,21 @@ public class GPSMechanism extends Mechanism {
         lati2 = secondLocation.getAltitude()*Math.PI/180;
         double temp;
         temp = Math.cos(lati1)*Math.cos(lati2)* Math.cos(long1-long2)+Math.sin(lati1)*Math.sin(lati2);
-        double distance = EARTH_RADIUS * Math.acos(temp);
+        distance = EARTH_RADIUS * Math.acos(temp);
         System.out.println("my distance" + distance);
-        double distance1 = firstLocation.distanceTo(secondLocation);
-//        float[] result = new float[3];
-//        Location.distanceBetween(long1,lati1,long2,lati2,result);
+        float[] result = new float[3];
 
-        System.out.println("system distance:" + distance1);
+        //系统算法：distanceTo. 这个算法语句最少
+//        distance = (double)firstLocation.distanceTo(secondLocation);
+
+        //系统算法：distanceBetween
+//        long1 = 0d;
+//        long2 = 0d;
+//        lati1 = Math.PI/2;
+//        lati2 = 0;
+//        Location.distanceBetween(lati1,long1,lati2,long2,result);
+
+        System.out.println("system distance:" + result[0]);
 
         return distance;
     }
