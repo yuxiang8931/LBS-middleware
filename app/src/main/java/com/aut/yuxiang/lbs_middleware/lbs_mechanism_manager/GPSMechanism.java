@@ -226,9 +226,9 @@ public class GPSMechanism extends Mechanism {
 //        lati1 = Math.PI/2;
 //        lati2 = 0;
 //        Location.distanceBetween(lati1,long1,lati2,long2,result);
-
-        System.out.println("system distance:" + result[0]);
-
+//        System.out.println("system distance:" + result[0]);
+//        distance = (double)result[0];
+        
         return distance;
     }
 
