@@ -32,8 +32,7 @@ public class MotionCalculatorTest {
             priMeth = new PrivateMethodTest();
         }
         buffer = new LinkedList<float[]>();
-        float [] tmpBuf = {1f,1f,1f};
-        buffer.offer(tmpBuf);
+
     }
 
     @Before
@@ -47,6 +46,41 @@ public class MotionCalculatorTest {
     }
     @Test
     public void calculateMotion() throws Exception {
+        boolean result;
+        float[] tmpBuf1 = {1f,0f,0f};
+        float[] tmpBuf2 = {3f,0f,0f};
+        float[] tmpBuf3 = {-1f,0f,0f};
+        float[] tmpBuf4 = {4f,0f,0f};
+        float[] tmpBuf5 = {3f,0f,0f};
+        buffer.offer(tmpBuf1);
+        result = motCal.calculateMotion(buffer);
+        assertEquals(result,false) ;
+
+        buffer.offer(tmpBuf1);
+        buffer.offer(tmpBuf2);
+        result = motCal.calculateMotion(buffer);
+        assertEquals(result,false) ;
+
+        buffer.offer(tmpBuf1);
+        buffer.offer(tmpBuf2);
+        buffer.offer(tmpBuf3);
+        result = motCal.calculateMotion(buffer);
+        assertEquals(result,false) ;
+
+        buffer.offer(tmpBuf1);
+        buffer.offer(tmpBuf2);
+        buffer.offer(tmpBuf3);
+        buffer.offer(tmpBuf4);
+        result = motCal.calculateMotion(buffer);
+        assertEquals(result,false) ;
+
+        buffer.offer(tmpBuf1);
+        buffer.offer(tmpBuf2);
+        buffer.offer(tmpBuf3);
+        buffer.offer(tmpBuf4);
+        buffer.offer(tmpBuf5);
+        result = motCal.calculateMotion(buffer);
+        assertEquals(result,true) ;
 
     }
 
@@ -79,25 +113,26 @@ public class MotionCalculatorTest {
 
     @Test
     public void calculateSumOfPeaksAndTroughsTest() throws Exception {
-        ArrayList<Float> tmpArray = null;
-        tmpArray = (ArrayList<Float>)PrivateMethodTest.getValue(motCal,"magnitudeArray");
-        assertEquals(tmpArray.size(), 0);
-        System.out.println(buffer.size());
+
+//        ArrayList<Float> tmpArray = null;
+//        tmpArray = (ArrayList<Float>)PrivateMethodTest.getValue(motCal,"magnitudeArray");
+//        assertEquals(tmpArray.size(), 0);
+//        System.out.println(buffer.size());
 
 //        Class [] cls = new Class[1];
 //        cls[0] = motCal.getClass();
 //        System.out.println("this class name:" + cls[0].toString());
-        float[] tmpFloat = {2f,2f,2f};
-        buffer.offer(tmpFloat);
-        Method mMag = priMeth.getMethod(motCal,"calculateMagnitude");
-        mMag.invoke(motCal,buffer) ;
-
-        tmpArray = (ArrayList<Float>)priMeth.getValue(motCal,"magnitudeArray");
-        System.out.println(tmpArray.size());
-
-        Method mCal = priMeth.getMethod(motCal,"calculateSumOfPeaksAndTroughs");
-        mCal.invoke(motCal);
-        System.out.println(tmpArray.get(0));
+//        float[] tmpFloat = {2f,2f,2f};
+//        buffer.offer(tmpFloat);
+//        Method mMag = priMeth.getMethod(motCal,"calculateMagnitude");
+//        mMag.invoke(motCal,buffer) ;
+//
+//        tmpArray = (ArrayList<Float>)priMeth.getValue(motCal,"magnitudeArray");
+//        System.out.println(tmpArray.size());
+//
+//        Method mCal = priMeth.getMethod(motCal,"calculateSumOfPeaksAndTroughs");
+//        mCal.invoke(motCal);
+//        System.out.println(tmpArray.get(0));
     }
 
 
