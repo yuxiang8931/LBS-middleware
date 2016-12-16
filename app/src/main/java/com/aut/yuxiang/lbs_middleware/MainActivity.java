@@ -20,6 +20,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.android.volley.VolleyError;
+import com.aut.yuxiang.lbs_middleware.lbs_net.NetRequestInterface;
+import com.aut.yuxiang.lbs_middleware.lbs_net.net_api.GeoLocationAPI;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
@@ -44,12 +47,29 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-                LBS.getInstance().getCurrentLocation(new LBSLocationListener() {
+//                LBS.getInstance().getCurrentLocation(new LBSLocationListener() {
+//                    @Override
+//                    public void onLocationUpdated(Location location) {
+//                        LogHelper.showLog(TAG, "OneTime:  " + location.getTime());
+//                    }
+//                });
+
+                GeoLocationAPI geoLocationAPI = new GeoLocationAPI(MainActivity.this, new NetRequestInterface() {
                     @Override
-                    public void onLocationUpdated(Location location) {
-                        LogHelper.showLog(TAG, "OneTime:  " + location.getTime());
+                    public void onResponse(Object response) {
+                        LogHelper.showLog(TAG, response.getClass().getName());
+                    }
+
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        LogHelper.showLog(TAG, error.networkResponse.statusCode);
                     }
                 });
+                geoLocationAPI.sendAPI();
+
+
+
+
             }
         });
 
@@ -61,7 +81,7 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        initLocation();
+//        initLocation();
     }
 
 

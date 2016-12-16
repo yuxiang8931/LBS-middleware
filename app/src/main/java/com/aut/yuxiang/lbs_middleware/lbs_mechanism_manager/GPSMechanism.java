@@ -31,13 +31,11 @@ public class GPSMechanism extends Mechanism {
     private boolean running = false;
     private static final int LATEST_LOCATIONS_NUMBER = 5;
     private static final long ACCEPTED_LOCATION_TIME = 20 * 1000;
-    private Context context;
-    private PolicyReferenceValues values;
 
     public GPSMechanism(Context context, final LBSLocationListener listener, final AdapterProviderUsabilityListener usabilityListener, PolicyReferenceValues values) {
+        super(context, listener, usabilityListener, values);
+
         locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        this.context = context;
-        this.values = values;
         locationListener = new android.location.LocationListener() {
             @Override
             public void onLocationChanged(Location location) throws SecurityException {

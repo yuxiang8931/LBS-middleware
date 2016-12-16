@@ -9,7 +9,7 @@ public class LogHelper {
 
     public static void showLog(String tag, Object msg) {
         if (DEBUG) {
-            android.util.Log.e(tag, String.valueOf(msg));
+            android.util.Log.e(tag, msg==null?"null":String.valueOf(msg));
         }
     }
 }
