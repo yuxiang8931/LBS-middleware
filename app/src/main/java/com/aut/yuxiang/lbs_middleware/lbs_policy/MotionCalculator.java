@@ -77,7 +77,8 @@ public class MotionCalculator {
                 tend = -1;
             }
             else {
-                tend = 0;
+                //tend = 0;
+                tend = previousTend;
             }
             if (tend != previousTend && previousTend != 0) {
                 sum += currentMagnitude;
