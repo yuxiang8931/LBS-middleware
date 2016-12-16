@@ -18,6 +18,7 @@ public class MotionCalculator {
     public boolean calculateMotion(Queue<float[]> buffer) {
         calculateMagnitude(buffer);
         float sum = calculateSumOfPeaksAndTroughs();
+        System.out.println("the sum of peaks and troughs:" + sum);
         magnitudeArray.clear();
         if (sum>4)
         {
@@ -36,21 +37,47 @@ public class MotionCalculator {
             float[] bufferItem = buffer.poll();
             float magnitude = (float) Math.sqrt((double) (bufferItem[0] * bufferItem[0] + bufferItem[1] * bufferItem[1] + bufferItem[2] * bufferItem[2]));
             magnitudeArray.add(magnitude);
+            System.out.println(magnitude);
         }
     }
+
+//    private float calculateSumOfPeaksAndTroughs() {
+//        float sum = 0;
+//        // increase 1, decrease -1
+//        int previousTend = 0;
+//        int tend = 0;
+//        for (int i = 0; i < magnitudeArray.size() - 1; i++) {
+//            float currentMagnitude = magnitudeArray.get(i);
+//            float nextMagnitude = magnitudeArray.get(i + 1);
+//            if (currentMagnitude < nextMagnitude) {
+//                tend = 1;
+//            } else if (currentMagnitude > nextMagnitude) {
+//                tend = -1;
+//            }
+//            if (tend != previousTend && previousTend != 0) {
+//                sum += currentMagnitude;
+//            }
+//            previousTend = tend;
+//
+//        }
+//        return sum;
+//    }
 
     private float calculateSumOfPeaksAndTroughs() {
         float sum = 0;
         // increase 1, decrease -1
         int previousTend = 0;
         int tend = 0;
-        for (int i = 1; i < magnitudeArray.size() - 1; i++) {
+        for (int i = 0; i < magnitudeArray.size() - 1; i++) {
             float currentMagnitude = magnitudeArray.get(i);
             float nextMagnitude = magnitudeArray.get(i + 1);
             if (currentMagnitude < nextMagnitude) {
                 tend = 1;
             } else if (currentMagnitude > nextMagnitude) {
                 tend = -1;
+            }
+            else {
+                tend = 0;
             }
             if (tend != previousTend && previousTend != 0) {
                 sum += currentMagnitude;
@@ -60,5 +87,4 @@ public class MotionCalculator {
         }
         return sum;
     }
-
 }
