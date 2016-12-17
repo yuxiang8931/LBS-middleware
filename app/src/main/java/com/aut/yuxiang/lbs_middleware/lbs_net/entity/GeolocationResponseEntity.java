@@ -5,17 +5,35 @@ package com.aut.yuxiang.lbs_middleware.lbs_net.entity;
  */
 
 public class GeolocationResponseEntity {
-    private String accuracy;
+
+
+    private float accuracy;
     private Location location;
 
     public GeolocationResponseEntity() {
     }
 
-    static class Location {
-        private String lat;
-        private String lng;
-
+    public static class Location {
         public Location() {
         }
+
+        float lat;
+        float lng;
+
+        public float getLat() {
+            return lat;
+        }
+
+        public float getLng() {
+            return lng;
+        }
+    }
+
+    public float getAccuracy() {
+        return accuracy;
+    }
+
+    public Location getLocation() {
+        return location;
     }
 }

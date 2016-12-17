@@ -30,13 +30,13 @@ public abstract class NetAPI {
         this.netRequestInterface = netRequestInterface;
     }
 
-    protected abstract Object generateRequestEntity();
+    protected abstract Object generateRequestEntity(Object entity);
 
     protected abstract NetRequestBuilder configBuilder(NetRequestBuilder netRequestBuilder);
 
-    public void sendAPI() {
+    public void sendAPI(Object entity) {
         NetRequestBuilder builder = new NetRequestBuilder(context);
-        Object entity = generateRequestEntity();
+        generateRequestEntity(entity);
         Gson gson = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.IDENTITY).create();
         String json = gson.toJson(entity);
         try {

@@ -14,6 +14,7 @@ public class MechanismManager {
     public static final String GPS_MECHANISM = "gps_mechanism";
     public static final String CELL_TOWER_MECHANISM = "cell_tower_mechanism";
     private GPSMechanism gpsMechanism;
+    private CellTowerMechanism cellTowerMechanism;
     private static MechanismManager instance;
 
     private MechanismManager() {
@@ -34,7 +35,11 @@ public class MechanismManager {
             }
             return gpsMechanism;
         } else if (mechanismName == CELL_TOWER_MECHANISM) {
-            return null;
+            if (cellTowerMechanism==null)
+            {
+                cellTowerMechanism = new CellTowerMechanism(context, listener, usabilityListener, values);
+            }
+            return cellTowerMechanism;
         } else {
             return null;
         }

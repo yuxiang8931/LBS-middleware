@@ -20,9 +20,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.android.volley.VolleyError;
-import com.aut.yuxiang.lbs_middleware.lbs_net.NetRequestInterface;
-import com.aut.yuxiang.lbs_middleware.lbs_net.net_api.GeoLocationAPI;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
@@ -47,27 +44,24 @@ public class MainActivity extends AppCompatActivity
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
-//                LBS.getInstance().getCurrentLocation(new LBSLocationListener() {
-//                    @Override
-//                    public void onLocationUpdated(Location location) {
-//                        LogHelper.showLog(TAG, "OneTime:  " + location.getTime());
-//                    }
-//                });
-
-                GeoLocationAPI geoLocationAPI = new GeoLocationAPI(MainActivity.this, new NetRequestInterface() {
+                LBS.getInstance().getCurrentLocation(new LBSLocationListener() {
                     @Override
-                    public void onResponse(Object response) {
-                        LogHelper.showLog(TAG, response.getClass().getName());
-                    }
-
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        LogHelper.showLog(TAG, error.networkResponse.statusCode);
+                    public void onLocationUpdated(Location location) {
+                        LogHelper.showLog(TAG, "OneTime:  " + location.getTime());
                     }
                 });
-                geoLocationAPI.sendAPI();
 
-
+//                GeoLocationAPI geoLocationAPI = new GeoLocationAPI(MainActivity.this, new NetRequestInterface() {
+//                    @Override
+//                    public void onResponse(Object response) {
+//                        LogHelper.showLog(TAG, response.getClass().getName());
+//                    }
+//
+//                    @Override
+//                    public void onErrorResponse(VolleyError error) {
+//                        LogHelper.showLog(TAG, error.networkResponse.statusCode);
+//                    }
+//                });
 
 
             }
@@ -81,7 +75,7 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-//        initLocation();
+        initLocation();
     }
 
 
@@ -100,11 +94,16 @@ public class MainActivity extends AppCompatActivity
     private void checkPermission() {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this,
+                        permission.ACCESS_COARSE_LOCATION)
+                        != PackageManager.PERMISSION_GRANTED) {
 
             // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
 
                 // Show an explanation to the user *asynchronously* -- don't block
                 // this thread waiting for the user's response! After the user
@@ -115,7 +114,7 @@ public class MainActivity extends AppCompatActivity
                 // No explanation needed, we can request the permission.
 
                 ActivityCompat.requestPermissions(this,
-                        new String[]{permission.ACCESS_FINE_LOCATION},
+                        new String[]{permission.ACCESS_FINE_LOCATION, permission.ACCESS_COARSE_LOCATION},
                         MY_PERMISSIONS_REQUEST_FINE_LOCATION);
 
                 // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
@@ -128,10 +127,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void startLBS() {
-        LBS.getInstance().startDetect(this, new PolicyReferenceValues(Accuracy.HIGH_LEVEL_ACCURACY, 1 * 1000)).getContinuouslyLocation(new LBSLocationListener() {
+        LBS.getInstance().startDetect(this, new PolicyReferenceValues(Accuracy.LOW_LEVEL_ACCURACY, 1 * 1000)).getContinuouslyLocation(new LBSLocationListener() {
             @Override
             public void onLocationUpdated(Location location) {
-                LogHelper.showLog(TAG, location==null? "location is null":location.getAccuracy());
+                LogHelper.showLog(TAG, location == null ? "location is null" : location.getAccuracy());
             }
         });
     }

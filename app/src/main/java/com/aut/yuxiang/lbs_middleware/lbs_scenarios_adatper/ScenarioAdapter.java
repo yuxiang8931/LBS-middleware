@@ -57,7 +57,7 @@ public class ScenarioAdapter {
                 if (values.isGPSAvailable) {
                     currentMechanism = MechanismManager.getInstance().getMechanism(context, listener, usabilityListener, MechanismManager.GPS_MECHANISM, values);
                 } else if (values.isCellTowerAvailable) {
-
+                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener,usabilityListener,MechanismManager.CELL_TOWER_MECHANISM, values);
                 }
                 else
                 {
@@ -66,7 +66,7 @@ public class ScenarioAdapter {
                 break;
             case LOW_LEVEL_ACCURACY:
                 if (values.isCellTowerAvailable) {
-
+                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener,usabilityListener,MechanismManager.CELL_TOWER_MECHANISM, values);
                 }
                 else
                 {

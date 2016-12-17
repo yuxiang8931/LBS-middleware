@@ -5,6 +5,7 @@ import android.content.Context;
 import com.android.volley.Request;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
+import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -27,7 +28,7 @@ public class NetRequestBuilder {
     private Map<String, String> headers;
     private JSONObject jsonObject;
     private String requestType;
-
+    private Gson gson;
     public NetRequestBuilder(Context context) {
         this.context = context;
     }
@@ -80,6 +81,11 @@ public class NetRequestBuilder {
         return this;
     }
 
+    public NetRequestBuilder setGson(Gson gson) {
+        this.gson = gson;
+        return this;
+    }
+
     public RequestSender Build() {
         return new RequestSender(context,
                 method,
@@ -90,6 +96,8 @@ public class NetRequestBuilder {
                 jsonObject,
                 request,
                 clazz,
-                headers);
+                headers,
+                gson
+        );
     }
 }

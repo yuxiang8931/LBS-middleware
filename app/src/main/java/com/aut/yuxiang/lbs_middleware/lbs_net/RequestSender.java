@@ -8,6 +8,7 @@ import com.android.volley.Response.ErrorListener;
 import com.android.volley.Response.Listener;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.StringRequest;
+import com.google.gson.Gson;
 
 import org.json.JSONObject;
 
@@ -28,6 +29,7 @@ public class RequestSender {
     private Request request;
     private Class clazz;
     private Map<String, String> headers;
+    private Gson gson;
     public static final int GET = Method.GET;
     public static final int POST = Method.POST;
     public static final String JSON = "json";
@@ -43,7 +45,8 @@ public class RequestSender {
                          JSONObject jsonObject,
                          Request request,
                          Class clazz,
-                         Map<String, String> headers) {
+                         Map<String, String> headers,
+                         Gson gson) {
         this.context = context;
         this.url = url;
         this.listener = listener;
@@ -54,6 +57,7 @@ public class RequestSender {
         this.request = request;
         this.clazz = clazz;
         this.headers = headers;
+        this.gson = gson;
     }
 
     public void send() {
@@ -66,7 +70,7 @@ public class RequestSender {
                 request = new JsonObjectRequest(method, url, jsonObject, listener, errorListener);
                 break;
             case GSON:
-                request = new GSONRequest(method, url, jsonObject, clazz, headers, listener, errorListener);
+                request = new GSONRequest(method, url, jsonObject, gson, clazz, headers, listener, errorListener);
                 break;
             default:
                 request = this.request;
