@@ -7,15 +7,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.junit.runners.Suite;
 
 import java.lang.reflect.*;
 import java.util.*;
 //import java.util.Queue;
 import static org.junit.Assert.*;
-
+import org.junit.runners.Suite;
 /**
  * Created by lingliang on 15/12/16.
  */
+
+@RunWith(Suite.class)
+@Suite.SuiteClasses({MotionCalculatorTest.class})
 public class MotionCalculatorTest {
 
     MotionCalculator motCal = null;
@@ -49,7 +53,7 @@ public class MotionCalculatorTest {
         boolean result;
         float[] tmpBuf1 = {1f,0f,0f};
         float[] tmpBuf2 = {3f,0f,0f};
-        float[] tmpBuf3 = {-1f,0f,0f};
+        float[] tmpBuf3 = {-3f,0f,0f};
         float[] tmpBuf4 = {4f,0f,0f};
         float[] tmpBuf5 = {3f,0f,0f};
         buffer.offer(tmpBuf1);
