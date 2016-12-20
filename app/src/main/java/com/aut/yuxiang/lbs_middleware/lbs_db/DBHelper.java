@@ -21,6 +21,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
         sqLiteDatabase.execSQL(SQL.CREATE_TABLE_ACCELEROMETER_READINGS);
         sqLiteDatabase.execSQL(SQL.CREATE_TABLE_GPS_READINGS);
+        sqLiteDatabase.execSQL(SQL.CREATE_TABLE_CELL_TOWER_READINGS);
     }
 
     @Override
@@ -30,5 +31,8 @@ public class DBHelper extends SQLiteOpenHelper {
 
         sqLiteDatabase.execSQL(SQL.DROP_TABLE_GPS_READINGS);
         sqLiteDatabase.execSQL(SQL.CREATE_TABLE_GPS_READINGS);
+
+        sqLiteDatabase.execSQL(SQL.DROP_TABLE_CELL_TOWER_READINGS);
+        sqLiteDatabase.execSQL(SQL.CREATE_TABLE_CELL_TOWER_READINGS);
     }
 }

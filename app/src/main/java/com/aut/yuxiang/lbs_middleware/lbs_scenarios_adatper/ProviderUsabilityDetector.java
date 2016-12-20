@@ -18,32 +18,32 @@ import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 public class ProviderUsabilityDetector {
     private static final String TAG = "ProviderUsabilityDetector";
-    private Context context;
+    private static Context context;
 
     protected ProviderUsabilityDetector(Context context) {
         this.context = context;
 
     }
 
-    protected boolean getGPSUsability() {
+    static public boolean getGPSUsability() {
         LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
     }
 
-    protected boolean getWifiUsability() {
+    static public boolean getWifiUsability() {
         ConnectivityManager connMgr = (ConnectivityManager) context.
                 getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
         return networkInfo.isConnected();
     }
 
-    protected boolean getAccelerometerUsability() {
+    static public boolean getAccelerometerUsability() {
         SensorManager mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         Sensor mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         return mSensor != null;
     }
 
-    protected boolean getCellTowerUsability() {
+    static public boolean getCellTowerUsability() {
         TelephonyManager mTelNet = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         GsmCellLocation location = (GsmCellLocation) mTelNet.getCellLocation();
         return location != null;

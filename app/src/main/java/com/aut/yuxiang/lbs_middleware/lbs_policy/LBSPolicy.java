@@ -12,17 +12,18 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 
-import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.Mechanism;
-import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.ScenarioAdapter;
-import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.MotionDetectionService.MotionCalculateListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.MotionDetectionService.MotionDetectionBinder;
+import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.ScenarioAdapter;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 import java.util.Timer;
-import java.util.TimerTask;
 
 import static com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues.ACCELEROMETER_RUNNING_PERIOD;
 import static com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues.accelerometerInterval;
@@ -133,6 +134,7 @@ public class LBSPolicy {
     }
 
     public void getContinuouslyLocation(LBSLocationListener listener) {
+        getCurrentLocation(listener);
         if (motionResultBroadcastReceiver == null) {
             LogHelper.showLog(TAG, "getContinuouslyLocation");
             IntentFilter filter = new IntentFilter(MOTION_DETECTION_RESULT_RECEIVER);
@@ -142,9 +144,14 @@ public class LBSPolicy {
     }
 
     public void stopContinuousLocation() {
-        context.unregisterReceiver(motionResultBroadcastReceiver);
-        motionResultBroadcastReceiver = null;
-        scenarioAdapter.stopMechanism();
+        try {
+            context.unregisterReceiver(motionResultBroadcastReceiver);
+            motionResultBroadcastReceiver = null;
+            scenarioAdapter.stopMechanism();
+        }catch(IllegalArgumentException ex)
+        {
+            ex.printStackTrace();
+        }
     }
 
 
@@ -155,13 +162,15 @@ public class LBSPolicy {
     }
 
     public void stopDetectingMotion() {
-        if (motionServiceRunning) {
+        try {
             context.unbindService(motionDetectionServiceConnection);
-            stopPeriodicAccelerometerSensor();
             LogHelper.showLog(TAG, "stopDection suc");
 //        context.stopService(intent);
-        } else {
+        } catch (Exception e) {
             LogHelper.showLog(TAG, "stopDection fail");
+        }
+        finally {
+            stopPeriodicAccelerometerSensor();
         }
         motionServiceRunning = false;
     }
@@ -177,45 +186,71 @@ public class LBSPolicy {
         context.bindService(intent, motionDetectionServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
+//    private TimerTask accelerometerStopUseTask = new TimerTask() {
+//        @Override
+//        public void run() {
+//            accelerometerStopTimer.cancel();
+//            stopPeriodicAccelerometerSensor();
+//            motionDetectionService.startCalculate(new MotionCalculateListener() {
+//                @Override
+//                public void onCalculatorFinish(boolean isMoved, long startTime) {
+//                    LogHelper.showLog(TAG, "onCalculatorFinish");
+//                    sendMotionResult(isMoved, startTime);
+//                    motionDetectionService.clearBuffer();
+//                    saveLatestMovementTimeStamp(startTime);
+//                    accelerometerDetectionRepeatTimer = new Timer();
+//                    accelerometerDetectionRepeatTimer.schedule(new TimerTask() {
+//                        @Override
+//                        public void run() {
+//                            accelerometerDetectionRepeatTimer.cancel();
+//                            startPeriodicAccelerometerSensor();
+//                        }
+//                    }, accelerometerInterval);
+//
+//                }
+//            });
+//        }
+//    };
+    private AccHandler accHandler = new AccHandler();
+
+    class AccHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            if (msg.what == 0) {
+                stopPeriodicAccelerometerSensor();
+                motionDetectionService.startCalculate(new MotionCalculateListener() {
+                    @Override
+                    public void onCalculatorFinish(boolean isMoved, long startTime) {
+                        LogHelper.showLog(TAG, "onCalculatorFinish");
+                        sendMotionResult(isMoved, startTime);
+                        motionDetectionService.clearBuffer();
+                        saveLatestMovementTimeStamp(startTime);
+                        accHandler.sendEmptyMessageDelayed(1, accelerometerInterval);
+                    }
+                });
+            } else if (msg.what == 1) {
+                startPeriodicAccelerometerSensor();
+            }
+        }
+    }
+
     private void startPeriodicAccelerometerSensor() {
         startAccelerometerSensor();
-        accelerometerStopTimer = new Timer();
-        accelerometerStopTimer.schedule(new TimerTask() {
-                                            @Override
-                                            public void run() {
-                                                accelerometerStopTimer.cancel();
-//                                                LogHelper.showLog(TAG, "Stop Sensor.");
-                                                stopPeriodicAccelerometerSensor();
-                                                motionDetectionService.startCalculate(new MotionCalculateListener() {
-                                                    @Override
-                                                    public void onCalculatorFinish(boolean isMoved, long startTime) {
-//                                                        LogHelper.showLog(TAG, "onCalculatorFinish");
-                                                        sendMotionResult(isMoved, startTime);
-                                                        motionDetectionService.clearBuffer();
-                                                        saveLatestMovementTimeStamp(startTime);
-                                                        accelerometerDetectionRepeatTimer = new Timer();
-                                                        accelerometerDetectionRepeatTimer.schedule(new TimerTask() {
-                                                            @Override
-                                                            public void run() {
-                                                                accelerometerDetectionRepeatTimer.cancel();
-                                                                startPeriodicAccelerometerSensor();
-                                                            }
-                                                        }, accelerometerInterval);
-
-                                                    }
-                                                });
-                                            }
-                                        }
-                , ACCELEROMETER_RUNNING_PERIOD);
+        accHandler.sendEmptyMessageDelayed(0, ACCELEROMETER_RUNNING_PERIOD);
+//        accelerometerStopTimer = new Timer();
+//        accelerometerStopTimer.schedule(accelerometerStopUseTask, ACCELEROMETER_RUNNING_PERIOD);
     }
 
     private void stopPeriodicAccelerometerSensor() {
         stopAccelerometerSensor();
-        accelerometerStopTimer.cancel();
-        if (accelerometerDetectionRepeatTimer!=null)
-        {
-            accelerometerDetectionRepeatTimer.cancel();
-        }
+//        accelerometerStopTimer.cancel();
+//        if (accelerometerDetectionRepeatTimer!=null)
+//        {
+//            accelerometerDetectionRepeatTimer.cancel();
+//        }
+        accHandler.removeMessages(0);
+        accHandler.removeMessages(1);
     }
 
     private void startAccelerometerSensor() {

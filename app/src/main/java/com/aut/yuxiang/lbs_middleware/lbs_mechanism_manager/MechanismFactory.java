@@ -10,19 +10,19 @@ import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.AdapterProviderUsabi
  * Created by yuxiang on 13/12/16.
  */
 
-public class MechanismManager {
+public class MechanismFactory {
     public static final String GPS_MECHANISM = "gps_mechanism";
     public static final String CELL_TOWER_MECHANISM = "cell_tower_mechanism";
     private GPSMechanism gpsMechanism;
     private CellTowerMechanism cellTowerMechanism;
-    private static MechanismManager instance;
+    private static MechanismFactory instance;
 
-    private MechanismManager() {
+    private MechanismFactory() {
     }
 
-    public static MechanismManager getInstance() {
+    public static MechanismFactory getInstance() {
         if (instance == null) {
-            instance = new MechanismManager();
+            instance = new MechanismFactory();
         }
         return instance;
     }

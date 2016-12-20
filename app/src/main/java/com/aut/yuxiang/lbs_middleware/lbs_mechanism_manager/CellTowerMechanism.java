@@ -1,6 +1,9 @@
 package com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationManager;
 import android.telephony.CellInfo;
@@ -16,19 +19,27 @@ import android.telephony.cdma.CdmaCellLocation;
 import android.telephony.gsm.GsmCellLocation;
 
 import com.android.volley.VolleyError;
+import com.aut.yuxiang.lbs_middleware.lbs_db.DBHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_db.SQL.CellTowerReadingsTable;
+import com.aut.yuxiang.lbs_middleware.lbs_db.SQL.GPSReadingsTable;
 import com.aut.yuxiang.lbs_middleware.lbs_net.NetRequestInterface;
 import com.aut.yuxiang.lbs_middleware.lbs_net.entity.GeolocationRequestEntity;
 import com.aut.yuxiang.lbs_middleware.lbs_net.entity.GeolocationRequestEntity.CellTower;
 import com.aut.yuxiang.lbs_middleware.lbs_net.entity.GeolocationResponseEntity;
 import com.aut.yuxiang.lbs_middleware.lbs_net.net_api.GeoLocationAPI;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
 import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.AdapterProviderUsabilityListener;
+import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.ProviderUsabilityDetector;
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-import static com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.MechanismManager.CELL_TOWER_MECHANISM;
+import static com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.MechanismFactory.CELL_TOWER_MECHANISM;
 
 /**
  * Created by yuxiang on 13/12/16.
@@ -40,6 +51,7 @@ public class CellTowerMechanism extends Mechanism {
     private static final int LTE = 1;
     private static final int CDMA = 2;
     private static final int WCDMA = 3;
+    private static final int LATEST_LOCATIONS_NUMBER = 1;
 
     private Context context;
     private int mcc;
@@ -49,52 +61,102 @@ public class CellTowerMechanism extends Mechanism {
     private int sid;
     private TelephonyManager telephonyManager;
     private NetRequestInterface netRequestInterface;
-
+    private Timer timer;
     private List<CellInfo> allCellInfo;
+    private boolean running = false;
+    private DBHelper dbHelper;
+    private SQLiteDatabase sqLiteDatabase;
+    private MyPhoneStateListener cellLocationListener;
 
     public CellTowerMechanism(Context context, LBSLocationListener listener, AdapterProviderUsabilityListener usabilityListener, PolicyReferenceValues values) {
         super(context, listener, usabilityListener, values);
         this.context = context;
+        cellLocationListener = new MyPhoneStateListener();
         telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        telephonyManager.listen(new MyPhoneStateListener(), PhoneStateListener.LISTEN_CELL_LOCATION);
+        telephonyManager.listen(cellLocationListener, PhoneStateListener.LISTEN_CELL_LOCATION);
         netRequestInterface = new GeoLocationInterface();
+        dbHelper = new DBHelper(context);
+        sqLiteDatabase = dbHelper.getWritableDatabase();
         getOperatorInfo();
-        requestLocationToNetAPI();
+
     }
 
     class MyPhoneStateListener extends PhoneStateListener {
         @Override
         public void onCellLocationChanged(CellLocation location) {
+            requestLocationToNetAPI();
         }
 
         @Override
         public void onSignalStrengthsChanged(SignalStrength signalStrength) {
+            requestLocationToNetAPI();
         }
 
         @Override
         public void onCellInfoChanged(List<CellInfo> cellInfo) {
+            requestLocationToNetAPI();
         }
     }
 
 
     @Override
     public String getMechanismName() {
+
         return CELL_TOWER_MECHANISM;
     }
 
     @Override
     public void startMechanismOneTime() {
-
+        LogHelper.showLog(TAG, "Start Cell Tower Mechanism Onc Time");
+        requestLocationToNetAPI();
     }
 
     @Override
     public void stopMechanism() {
-
+        LogHelper.showLog(TAG, "Stop Cell Tower Mechanism.");
+        if (running) {
+            if (timer != null) timer.cancel();
+            closeDB();
+            telephonyManager.listen(cellLocationListener, PhoneStateListener.LISTEN_NONE);
+            LBS.getInstance().startDetect(context, values);
+        }
+        running = false;
     }
 
     @Override
     public void startMechanism() {
         super.startMechanism();
+        LogHelper.showLog(TAG, "Start Cell Tower Mechanism.");
+        clearCache();
+        running = true;
+        requestLocationToNetAPI();
+    }
+
+
+    private void sendRequestDelay(long delayTime) {
+        double averageSpeed = getAverageSpeed();
+        if (averageSpeed < 1) {
+            stopMechanism();
+
+        } else {
+            scheduleTimerForSendingRequest(delayTime);
+        }
+    }
+
+    private void scheduleTimerForSendingRequest(long delayTime) {
+        timer = new Timer();
+        TimerTask task = new TimerTask() {
+            @Override
+            public void run() {
+                requestLocationToNetAPI();
+                timer.cancel();
+            }
+        };
+        timer.schedule(task, delayTime);
+    }
+
+    private long getInterval() {
+        return 1000 * 3;
     }
 
     private void getOperatorInfo() {
@@ -130,7 +192,6 @@ public class CellTowerMechanism extends Mechanism {
     private int getCellInfoType(CellInfo cellInfo) {
         if (cellInfo instanceof CellInfoGsm) {
             return GSM;
-
         } else if (cellInfo instanceof CellInfoCdma) {
             return CDMA;
 
@@ -179,6 +240,7 @@ public class CellTowerMechanism extends Mechanism {
                     mcc = cellInfoLte.getCellIdentity().getMcc();
                     mnc = cellInfoLte.getCellIdentity().getMnc();
                     dbm = cellInfoLte.getCellSignalStrength().getDbm();
+//                    lac = this.lac;
                 } else if (getCellInfoType(cellInfo) == WCDMA) {
                     CellInfoWcdma cellInfoWcdma = (CellInfoWcdma) cellInfo;
                     cellId = cellInfoWcdma.getCellIdentity().getCid();
@@ -220,14 +282,123 @@ public class CellTowerMechanism extends Mechanism {
                 location.setLongitude(entity.getLocation().getLng());
                 location.setLatitude(entity.getLocation().getLat());
                 location.setAccuracy(entity.getAccuracy());
+                saveCache(location);
                 listener.onLocationUpdated(location);
+                if (running) {
+                    if (!checkOtherProviders())
+                    {
+                        sendRequestDelay(getInterval());
+                    }
+                }
             }
+        }
+
+        private boolean checkOtherProviders() {
+            boolean result;
+            if (result = ProviderUsabilityDetector.getGPSUsability()) {
+                usabilityListener.onProviderAble(false);
+            }
+            return result;
         }
 
         @Override
         public void onErrorResponse(VolleyError error) {
-
+            if (running) {
+//                stopMechanism();
+                listener.onLocationUpdated(null);
+                sendRequestDelay(getInterval());
+            }
         }
+    }
+
+
+    private ArrayList<Location> getLatestCellTowerLocationsFromDB(int limitNum) {
+        String table = CellTowerReadingsTable.CELL_TOWER_READINGS_TABLE_NAME;
+        String[] columns = {CellTowerReadingsTable.LATITUDE, CellTowerReadingsTable.LONGITUDE, CellTowerReadingsTable.TIME_STAMP};
+        String selection = null;
+        String[] selectionArgs = null;
+        String groupBy = null;
+        String having = null;
+        String orderBy = CellTowerReadingsTable.TIME_STAMP + " DESC";
+        String limit = String.valueOf(limitNum);
+        Cursor cursor = sqLiteDatabase.query(table, columns, selection, selectionArgs, groupBy, having, orderBy, limit);
+        ArrayList<Location> result = null;
+        if (cursor != null) {
+            if (cursor.getCount() < limitNum) {
+                return null;
+            }
+            result = new ArrayList<>();
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                Location location = new Location(LocationManager.GPS_PROVIDER);
+                double latitude = cursor.getDouble(cursor.getColumnIndex(CellTowerReadingsTable.LATITUDE));
+                double longitude = cursor.getDouble(cursor.getColumnIndex(CellTowerReadingsTable.LONGITUDE));
+                long time = cursor.getLong(cursor.getColumnIndex(CellTowerReadingsTable.TIME_STAMP));
+                location.setLatitude(latitude);
+                location.setLongitude(longitude);
+                location.setTime(time);
+//                if (System.currentTimeMillis() - location.getTime() < ACCEPTED_LOCATION_TIME)
+                {
+                    result.add(location);
+                }
+                cursor.moveToNext();
+            }
+            cursor.close();
+        }
+        return result;
+    }
+
+    private long saveCache(Location location) {
+        long execution;
+        if (!sqLiteDatabase.isOpen()) {
+            sqLiteDatabase = dbHelper.getWritableDatabase();
+        }
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(GPSReadingsTable.ALTITUDE, location.getAltitude());
+        contentValues.put(GPSReadingsTable.LATITUDE, location.getLatitude());
+        contentValues.put(GPSReadingsTable.LONGITUDE, location.getLongitude());
+        contentValues.put(GPSReadingsTable.ACCURACY, location.getAccuracy());
+        contentValues.put(GPSReadingsTable.TIME_STAMP, location.getTime());
+        execution = sqLiteDatabase.
+                insert(CellTowerReadingsTable.CELL_TOWER_READINGS_TABLE_NAME, null, contentValues);
+        return execution;
+    }
+
+    private int clearCache() {
+        if (!sqLiteDatabase.isOpen()) {
+            sqLiteDatabase = dbHelper.getWritableDatabase();
+        }
+        int execution = sqLiteDatabase.delete(GPSReadingsTable.GPS_READINGS_TABLE_NAME, null, null);
+        LogHelper.showLog(TAG, "Clear cached items: " + execution);
+        return execution;
+    }
+
+    private void closeDB() {
+        sqLiteDatabase.close();
+        dbHelper.close();
+    }
+
+
+    private double getAverageSpeed() {
+        double sumOfSpeed = 0;
+        ArrayList<Location> latestLocationsList = getLatestCellTowerLocationsFromDB(LATEST_LOCATIONS_NUMBER);
+        if (latestLocationsList != null && latestLocationsList.size() == LATEST_LOCATIONS_NUMBER) {
+            for (int i = 0; i < latestLocationsList.size() - 1; i += 2) {
+                Location fistLoc = latestLocationsList.get(i);
+                Location secLoc = latestLocationsList.get(i + 1);
+                double distance = getDistance(fistLoc, secLoc);
+                long time = secLoc.getTime() - fistLoc.getTime();
+                sumOfSpeed += distance / time;
+            }
+            LogHelper.showLog(TAG, "Speed: " + sumOfSpeed);
+            return sumOfSpeed / latestLocationsList.size();
+        } else {
+            return Double.MAX_VALUE;
+        }
+    }
+
+    private double getDistance(Location firstLocation, Location secondLocation) {
+        return 0;
     }
 
 

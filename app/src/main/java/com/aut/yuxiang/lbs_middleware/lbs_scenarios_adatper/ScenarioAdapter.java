@@ -3,7 +3,7 @@ package com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper;
 import android.content.Context;
 
 import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.Mechanism;
-import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.MechanismManager;
+import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.MechanismFactory;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
 import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
@@ -42,9 +42,9 @@ public class ScenarioAdapter {
     private void reAdapt(boolean oneTime) {
 //        Mechanism mechanism = adapt(locationListener, values);
 //        if (mechanism.getMechanismName() != currentMechanism.getMechanismName()) {
-            stopMechanism();
+        stopMechanism();
 //            currentMechanism = mechanism;
-            runMechanism(oneTime, locationListener, values);
+        runMechanism(oneTime, locationListener, values);
 //        }
     }
 
@@ -55,21 +55,17 @@ public class ScenarioAdapter {
         switch (values.accuracy) {
             case HIGH_LEVEL_ACCURACY:
                 if (values.isGPSAvailable) {
-                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener, usabilityListener, MechanismManager.GPS_MECHANISM, values);
+                    currentMechanism = MechanismFactory.getInstance().getMechanism(context, listener, usabilityListener, MechanismFactory.GPS_MECHANISM, values);
                 } else if (values.isCellTowerAvailable) {
-                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener,usabilityListener,MechanismManager.CELL_TOWER_MECHANISM, values);
-                }
-                else
-                {
+                    currentMechanism = MechanismFactory.getInstance().getMechanism(context, listener, usabilityListener, MechanismFactory.CELL_TOWER_MECHANISM, values);
+                } else {
                     return null;
                 }
                 break;
             case LOW_LEVEL_ACCURACY:
                 if (values.isCellTowerAvailable) {
-                    currentMechanism = MechanismManager.getInstance().getMechanism(context, listener,usabilityListener,MechanismManager.CELL_TOWER_MECHANISM, values);
-                }
-                else
-                {
+                    currentMechanism = MechanismFactory.getInstance().getMechanism(context, listener, usabilityListener, MechanismFactory.CELL_TOWER_MECHANISM, values);
+                } else {
                     return null;
                 }
                 break;
@@ -84,6 +80,11 @@ public class ScenarioAdapter {
         this.values = values;
         this.locationListener = listener;
         currentMechanism = adapt(listener, values);
+//        if (currentMechanism!=null&&currentMechanism.getMechanismName()!=temp.getMechanismName())
+//        {
+//            currentMechanism.stopMechanism();
+//        }
+//        currentMechanism = temp;
         if (currentMechanism != null) {
             if (oneTime) {
                 currentMechanism.startMechanismOneTime();

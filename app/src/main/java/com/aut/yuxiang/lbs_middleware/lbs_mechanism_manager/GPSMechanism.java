@@ -82,7 +82,7 @@ public class GPSMechanism extends Mechanism {
 
     @Override
     public String getMechanismName() {
-        return MechanismManager.GPS_MECHANISM;
+        return MechanismFactory.GPS_MECHANISM;
     }
 
     @Override
@@ -96,9 +96,8 @@ public class GPSMechanism extends Mechanism {
 
     public void startMechanismOneTime() throws SecurityException {
         LogHelper.showLog(TAG, "Start GPS Mechanism One Time");
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null);
     }
-
     @Override
     public void stopMechanism() throws SecurityException {
         LogHelper.showLog(TAG, "Stop GPS Mechanism");
@@ -152,7 +151,6 @@ public class GPSMechanism extends Mechanism {
         } else {
             return Double.MAX_VALUE;
         }
-
     }
 
     private ArrayList<Location> getLatestGPSLocationsFromDB(int limitNum) {
@@ -180,7 +178,7 @@ public class GPSMechanism extends Mechanism {
                 location.setLatitude(latitude);
                 location.setLongitude(longitude);
                 location.setTime(time);
-//                if (System.currentTimeMillis() - location.getTime() < ACCEPTED_LOCATION_TIME)
+                if (System.currentTimeMillis() - location.getTime() < ACCEPTED_LOCATION_TIME)
                 {
                     result.add(location);
                 }

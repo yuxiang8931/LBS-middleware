@@ -41,9 +41,7 @@ public class LBS {
         this.values = values;
         if (policy == null) {
             policy = new LBSPolicy(context, values);
-        }
-        else
-        {
+        } else {
             policy.setPolicyReferenceValues(values);
         }
         policy.startDetectingMotion();
@@ -51,12 +49,11 @@ public class LBS {
     }
 
 
-
     public void getCurrentLocation(LBSLocationListener listener) {
         if (policy == null) {
             throw new NullPointerException("Have not started detecting motion!");
         }
-         policy.getCurrentLocation(listener);
+        policy.getCurrentLocation(listener);
     }
 
     public void getCurrentMechanismLocation(LBSLocationListener listener) {
@@ -67,20 +64,17 @@ public class LBS {
         policy.getMechanismLocation(listener);
     }
 
-    public void getContinuouslyLocation(LBSLocationListener listener)
-    {
+    public void getContinuouslyLocation(LBSLocationListener listener) {
         if (policy == null) {
             throw new NullPointerException("Have not started detecting motion!");
         }
         policy.getContinuouslyLocation(listener);
     }
 
-    public void stopContinuousLocation()
-    {
-        if (policy == null) {
-            throw new NullPointerException("Have not started detecting motion!");
+    public void stopContinuousLocation() {
+        if (policy != null) {
+            policy.stopContinuousLocation();
         }
-        policy.stopContinuousLocation();
     }
 
     public void stopDetect() {
@@ -91,8 +85,7 @@ public class LBS {
         policy.stopDetectingMotion();
     }
 
-    public interface LBSLocationListener
-    {
+    public interface LBSLocationListener {
         public void onLocationUpdated(Location location);
     }
 

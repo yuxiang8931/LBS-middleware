@@ -32,6 +32,16 @@ public class SQL {
             ")";
     public static final String DROP_TABLE_GPS_READINGS = "DROP TABLE" + GPSReadingsTable.GPS_READINGS_TABLE_NAME;
 
+    public static final String CREATE_TABLE_CELL_TOWER_READINGS = "CREATE TABLE " + CellTowerReadingsTable.CELL_TOWER_READINGS_TABLE_NAME +
+            "(" + CellTowerReadingsTable._ID + " " + INT_TYPE + ", " +
+            CellTowerReadingsTable.ALTITUDE + " " + REAL_TYPE + ", " +
+            CellTowerReadingsTable.LATITUDE + " " + REAL_TYPE + ", " +
+            CellTowerReadingsTable.LONGITUDE + " " + REAL_TYPE + ", " +
+            CellTowerReadingsTable.ACCURACY + " " + REAL_TYPE + ", " +
+            CellTowerReadingsTable.TIME_STAMP + " " + INT_TYPE +
+            ")";
+    public static final String DROP_TABLE_CELL_TOWER_READINGS = "DROP TABLE" + CellTowerReadingsTable.CELL_TOWER_READINGS_TABLE_NAME;
+
     public class AccelerometerReadingsTable implements BaseColumns {
         public static final String ACCELEROMETER_READINGS_TABLE_NAME = "accelerometer_readings";
         public static final String X_AXIS = "x_axis";
@@ -42,6 +52,16 @@ public class SQL {
 
     public class GPSReadingsTable implements BaseColumns {
         public static final String GPS_READINGS_TABLE_NAME = "gps_readings";
+        public static final String ALTITUDE = "altitude";
+        public static final String LATITUDE = "latitude";
+        public static final String LONGITUDE = "longitude";
+        public static final String ACCURACY = "accuracy";
+        public static final String TIME_STAMP = "time_stamp";
+    }
+
+    public class CellTowerReadingsTable implements BaseColumns
+    {
+        public static final String CELL_TOWER_READINGS_TABLE_NAME = "cell_tower_readings";
         public static final String ALTITUDE = "altitude";
         public static final String LATITUDE = "latitude";
         public static final String LONGITUDE = "longitude";

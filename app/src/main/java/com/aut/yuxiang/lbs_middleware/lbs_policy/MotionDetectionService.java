@@ -95,6 +95,7 @@ public class MotionDetectionService extends Service {
             super.run();
             while (true) {
                 if (run) {
+                    LogHelper.showLog(TAG,"service is running...");
                     if (buffer != null&& buffer.size()>0) {
                         boolean isMoved = motionCalculator.calculateMotion(buffer);
                         listener.onCalculatorFinish(isMoved, System.currentTimeMillis());
@@ -104,11 +105,11 @@ public class MotionDetectionService extends Service {
                     }
                     run = false;
                 }
-//                try {
-//                    Thread.sleep();
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

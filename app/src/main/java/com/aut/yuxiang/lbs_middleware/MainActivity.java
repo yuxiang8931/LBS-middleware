@@ -3,6 +3,7 @@ package com.aut.yuxiang.lbs_middleware;
 import android.Manifest;
 import android.Manifest.permission;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -16,20 +17,41 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
 
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues.Accuracy;
 import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import static com.aut.yuxiang.lbs_middleware.R.id.map;
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     private static final String TAG = "MainActivity";
     private static final int MY_PERMISSIONS_REQUEST_FINE_LOCATION = 0x01;
+    private GoogleMap googleMap;
+    private LatLng currentLatLng;
+    private FloatingActionButton fab;
+    private boolean running = false;
+    private Animation animation;
+    private Accuracy accuracy = Accuracy.HIGH_LEVEL_ACCURACY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,36 +59,6 @@ public class MainActivity extends AppCompatActivity
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                LBS.getInstance().getCurrentLocation(new LBSLocationListener() {
-                    @Override
-                    public void onLocationUpdated(Location location) {
-                        LogHelper.showLog(TAG, "OneTime:  " + location.getTime());
-                    }
-                });
-
-//                GeoLocationAPI geoLocationAPI = new GeoLocationAPI(MainActivity.this, new NetRequestInterface() {
-//                    @Override
-//                    public void onResponse(Object response) {
-//                        LogHelper.showLog(TAG, response.getClass().getName());
-//                    }
-//
-//                    @Override
-//                    public void onErrorResponse(VolleyError error) {
-//                        LogHelper.showLog(TAG, error.networkResponse.statusCode);
-//                    }
-//                });
-
-
-            }
-        });
-
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
@@ -75,20 +67,48 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-        initLocation();
+        animation = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        animation.setRepeatMode(Animation.RESTART);
+        animation.setRepeatCount(Animation.INFINITE);
+        animation.setDuration(1000);
+        animation.setFillAfter(true);
+        animation.setInterpolator(new LinearInterpolator());
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!running) {
+                    Snackbar.make(view, "LBS Start.", Snackbar.LENGTH_SHORT).show();
+                    initLocation();
+                    fab.startAnimation(animation);
+                } else {
+                    Snackbar.make(view, "LBS Stop.", Snackbar.LENGTH_SHORT).show();
+                    stopLocation();
+                    animation.cancel();
+                }
+                running = !running;
+            }
+        });
+
+        initMap();
+    }
+
+    private void initMap() {
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(map);
+        mapFragment.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(GoogleMap googleMap) {
+                MainActivity.this.googleMap = googleMap;
+                fab.setClickable(true);
+            }
+        });
     }
 
 
     private void initLocation() {
 
         checkPermission();
-//        registerReceiver(new BroadcastReceiver() {
-//            @Override
-//            public void onReceive(Context context, Intent intent) {
-//                Toast.makeText(MainActivity.this, intent.getStringExtra("status"), Toast.LENGTH_SHORT).show();
-//            }
-//        }, new IntentFilter(getPackageName() + ".movement"));
-
     }
 
     private void checkPermission() {
@@ -98,28 +118,14 @@ public class MainActivity extends AppCompatActivity
                 ContextCompat.checkSelfPermission(this,
                         permission.ACCESS_COARSE_LOCATION)
                         != PackageManager.PERMISSION_GRANTED) {
-
-            // Should we show an explanation?
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION) ||
                     ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.ACCESS_COARSE_LOCATION)) {
-
-                // Show an explanation to the user *asynchronously* -- don't block
-                // this thread waiting for the user's response! After the user
-                // sees the explanation, try again to request the permission.
-
+                            Manifest.permission.ACCESS_COARSE_LOCATION)) {
             } else {
-
-                // No explanation needed, we can request the permission.
-
                 ActivityCompat.requestPermissions(this,
                         new String[]{permission.ACCESS_FINE_LOCATION, permission.ACCESS_COARSE_LOCATION},
                         MY_PERMISSIONS_REQUEST_FINE_LOCATION);
-
-                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
-                // app-defined int constant. The callback method gets the
-                // result of the request.
             }
         } else {
             startLBS();
@@ -127,12 +133,48 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void startLBS() {
-        LBS.getInstance().startDetect(this, new PolicyReferenceValues(Accuracy.LOW_LEVEL_ACCURACY, 1 * 1000)).getContinuouslyLocation(new LBSLocationListener() {
+        LBS.getInstance().startDetect(this, new PolicyReferenceValues(accuracy, 1 * 1000)).getContinuouslyLocation(new LBSLocationListener() {
             @Override
             public void onLocationUpdated(Location location) {
                 LogHelper.showLog(TAG, location == null ? "location is null" : location.getAccuracy());
+                addMark(location);
             }
         });
+    }
+
+    private void addMark(Location location) {
+        if (googleMap != null && location != null) {
+            MarkerOptions markerOptions = new MarkerOptions();
+            LatLng tempLatlng = new LatLng(location.getLatitude(), location.getLongitude());
+            if (currentLatLng != null) {
+                drawLine(currentLatLng, tempLatlng);
+            }
+            currentLatLng = tempLatlng;
+            markerOptions.position(currentLatLng);
+            googleMap.addMarker(markerOptions);
+            googleMap.setOnMarkerClickListener(new OnMarkerClickListener() {
+                @Override
+                public boolean onMarkerClick(Marker marker) {
+                    return true;
+                }
+            });
+            moveCamera(currentLatLng);
+        }
+    }
+
+    private void moveCamera(LatLng latLng) {
+        if (latLng != null) {
+            CameraPosition cameraPosition = CameraPosition.fromLatLngZoom(latLng, 13);
+            googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
+        }
+
+    }
+
+    private void drawLine(LatLng l1, LatLng l2) {
+        Polyline line = googleMap.addPolyline(new PolylineOptions()
+                .add(l1, l2)
+                .width(5)
+                .color(Color.RED));
     }
 
 
@@ -143,12 +185,16 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+    private void stopLocation() {
+        LBS.getInstance().stopContinuousLocation();
+        LBS.getInstance().stopDetect();
+    }
+
     @Override
     protected void onDestroy() {
         super.onStop();
+        stopLocation();
 
-        LBS.getInstance().stopContinuousLocation();
-        LBS.getInstance().stopDetect();
     }
 
     @Override
@@ -161,46 +207,41 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
+//    @Override
+//    public boolean onCreateOptionsMenu(Menu menu) {
+//        // Inflate the menu; this adds items to the action bar if it is present.
+//        getMenuInflater().inflate(R.menu.main, menu);
+//        return true;
+//    }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        // Handle action bar item clicks here. The action bar will
+//        // automatically handle clicks on the Home/Up button, so long
+//        // as you specify a parent activity in AndroidManifest.xml.
+//        int id = item.getItemId();
+//
+//        return super.onOptionsItemSelected(item);
+//    }
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
+        if (id == R.id.hi_acc) {
+            if (running) {
+                Snackbar.make(fab, "LBS is running", Snackbar.LENGTH_SHORT).show();
+            } else {
+                accuracy = Accuracy.HIGH_LEVEL_ACCURACY;
+                Snackbar.make(fab, "Accuracy is changed to High Level", Snackbar.LENGTH_SHORT).show();
+            }
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        } else if (id == R.id.low_acc) {
+            if (running) {
+                Snackbar.make(fab, "LBS is running", Snackbar.LENGTH_SHORT).show();
+            } else {
+                accuracy = Accuracy.LOW_LEVEL_ACCURACY;
+                Snackbar.make(fab, "Accuracy is changed to Low Level", Snackbar.LENGTH_SHORT).show();
+            }
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
