@@ -195,6 +195,10 @@ public class GPSMechanism extends Mechanism {
 
 
     private long saveCache(Location location) {
+        if (!sqLiteDatabase.isOpen())
+        {
+            sqLiteDatabase  = dbHelper.getWritableDatabase();
+        }
         long execution = 0;
         ContentValues contentValues = new ContentValues();
         contentValues.put(GPSReadingsTable.ALTITUDE, location.getAltitude());
