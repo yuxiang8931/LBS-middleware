@@ -222,7 +222,7 @@ public class LBSPolicy {
                 motionDetectionService.startCalculate(new MotionCalculateListener() {
                     @Override
                     public void onCalculatorFinish(boolean isMoved, long startTime) {
-                        LogHelper.showLog(TAG, "onCalculatorFinish");
+//                        LogHelper.showLog(TAG, "onCalculatorFinish");
                         sendMotionResult(isMoved, startTime);
                         motionDetectionService.clearBuffer();
                         saveLatestMovementTimeStamp(startTime);
