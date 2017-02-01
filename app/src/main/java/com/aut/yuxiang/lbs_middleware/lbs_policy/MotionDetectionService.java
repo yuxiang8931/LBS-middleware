@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.support.annotation.BinderThread;
 
 import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
 
@@ -58,6 +59,7 @@ public class MotionDetectionService extends Service {
     @Override
     public void onDestroy() {
         LogHelper.showLog(TAG,"onDestroy");
+        calculateMotionThread = null;
         super.onDestroy();
     }
 
@@ -74,7 +76,7 @@ public class MotionDetectionService extends Service {
         }
 
     }
-
+    @BinderThread
     public void startCalculate(MotionCalculateListener listener) {
         if (calculateMotionThread == null) {
             calculateMotionThread = new CalculateMotionThread(listener);
@@ -95,7 +97,7 @@ public class MotionDetectionService extends Service {
             super.run();
             while (true) {
                 if (run) {
-//                    LogHelper.showLog(TAG,"service is running...");
+                    LogHelper.showLog(TAG,"service is running...");
                     if (buffer != null&& buffer.size()>0) {
                         boolean isMoved = motionCalculator.calculateMotion(buffer);
                         listener.onCalculatorFinish(isMoved, System.currentTimeMillis());
@@ -106,7 +108,7 @@ public class MotionDetectionService extends Service {
                     run = false;
                 }
                 try {
-                    Thread.sleep(800);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

@@ -1,5 +1,7 @@
 package com.aut.yuxiang.lbs_middleware.lbs_policy;
 
+import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
+
 import java.util.ArrayList;
 import java.util.Queue;
 
@@ -18,6 +20,7 @@ public class MotionCalculator {
     public boolean calculateMotion(Queue<float[]> buffer) {
         calculateMagnitude(buffer);
         float sum = calculateSumOfPeaksAndTroughs();
+        LogHelper.showLog(TAG, "Motion Value:  "+sum);
         magnitudeArray.clear();
         if (sum>4)
         {

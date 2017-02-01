@@ -46,7 +46,14 @@ public class ProviderUsabilityDetector {
     static public boolean getCellTowerUsability() {
         TelephonyManager mTelNet = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         GsmCellLocation location = (GsmCellLocation) mTelNet.getCellLocation();
-        return location != null;
+        return location != null&&isOnline();
+    }
+
+   static public boolean isOnline() {
+        ConnectivityManager connMgr = (ConnectivityManager)
+                context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+        return (networkInfo != null && networkInfo.isConnected());
     }
 
     protected PolicyReferenceValues detectProviderUsability(PolicyReferenceValues policyReferenceValues) {

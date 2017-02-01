@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -16,6 +18,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 
+import com.aut.yuxiang.lbs_middleware.lbs_db.DBHelper;
+import com.aut.yuxiang.lbs_middleware.lbs_db.SQL.CellTowerReadingsTable;
 import com.aut.yuxiang.lbs_middleware.lbs_mechanism_manager.Mechanism;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.MotionDetectionService.MotionCalculateListener;
@@ -56,6 +60,8 @@ public class LBSPolicy {
     private Intent motionDetectionResult;
     private BroadcastReceiver motionResultBroadcastReceiver;
     private Intent motionResultReceiverIntent;
+    private DBHelper dbHelper;
+    private SQLiteDatabase sqLiteDatabase;
 
     class MotionDetectionResultsReceiver extends BroadcastReceiver {
         private LBSLocationListener listener;
@@ -70,12 +76,14 @@ public class LBSPolicy {
                 boolean isMove = intent.getBooleanExtra(IS_MOVED_KEY, false);
                 if (isMove) {
                     LogHelper.showLog(TAG, "Moving");
+                    LogHelper.showToast(context, "Moving");
                     currentMechanism = scenarioAdapter.runMechanism(false, listener, policyReferenceValues);
                     if (currentMechanism == null) {
                         listener.onLocationUpdated(null);
                     }
                 } else {
                     LogHelper.showLog(TAG, "Stationary");
+                    LogHelper.showToast(context, "Stationary");
                     Location currentLocation;
                     if ((currentLocation = getCachedLocation()) != null) {
                         listener.onLocationUpdated(currentLocation);
@@ -95,6 +103,7 @@ public class LBSPolicy {
         mSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         motionListener = new MotionAccelerometerListener();
         scenarioAdapter = new ScenarioAdapter(context);
+        dbHelper = new DBHelper(context);
         motionDetectionServiceConnection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
@@ -110,7 +119,46 @@ public class LBSPolicy {
                 startDetectingMotion();
             }
         };
+    }
 
+    private void closeDB() {
+        sqLiteDatabase.close();
+        dbHelper.close();
+    }
+
+    private Location getLatestCellTowerLocationsFromDB(int limitNum) {
+        if (sqLiteDatabase==null||!sqLiteDatabase.isOpen())
+        {
+            sqLiteDatabase = dbHelper.getWritableDatabase();
+        }
+        String table = CellTowerReadingsTable.CELL_TOWER_READINGS_TABLE_NAME;
+        String[] columns = {CellTowerReadingsTable.LATITUDE, CellTowerReadingsTable.LONGITUDE, CellTowerReadingsTable.TIME_STAMP};
+        String selection = null;
+        String[] selectionArgs = null;
+        String groupBy = null;
+        String having = null;
+        String orderBy = CellTowerReadingsTable.TIME_STAMP + " DESC";
+        String limit = String.valueOf(limitNum);
+        Location latestLocation = null;
+        Cursor cursor = sqLiteDatabase.query(table, columns, selection, selectionArgs, groupBy, having, orderBy, limit);
+        if (cursor != null) {
+            if (cursor.getCount() < limitNum) {
+                return null;
+            }
+            cursor.moveToFirst();
+            while (!cursor.isAfterLast()) {
+                latestLocation = new Location(LocationManager.NETWORK_PROVIDER);
+                double latitude = cursor.getDouble(cursor.getColumnIndex(CellTowerReadingsTable.LATITUDE));
+                double longitude = cursor.getDouble(cursor.getColumnIndex(CellTowerReadingsTable.LONGITUDE));
+                long time = cursor.getLong(cursor.getColumnIndex(CellTowerReadingsTable.TIME_STAMP));
+                latestLocation.setLatitude(latitude);
+                latestLocation.setLongitude(longitude);
+                latestLocation.setTime(time);
+                cursor.moveToNext();
+            }
+            cursor.close();
+        }
+        return latestLocation;
     }
 
     public void getCurrentLocation(LBSLocationListener listener) {
@@ -148,8 +196,7 @@ public class LBSPolicy {
             context.unregisterReceiver(motionResultBroadcastReceiver);
             motionResultBroadcastReceiver = null;
             scenarioAdapter.stopMechanism();
-        }catch(IllegalArgumentException ex)
-        {
+        } catch (IllegalArgumentException ex) {
             ex.printStackTrace();
         }
     }
@@ -168,8 +215,8 @@ public class LBSPolicy {
 //        context.stopService(intent);
         } catch (Exception e) {
             LogHelper.showLog(TAG, "stopDection fail");
-        }
-        finally {
+        } finally {
+            closeDB();
             stopPeriodicAccelerometerSensor();
         }
         motionServiceRunning = false;
@@ -186,7 +233,7 @@ public class LBSPolicy {
         context.bindService(intent, motionDetectionServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
-//    private TimerTask accelerometerStopUseTask = new TimerTask() {
+    //    private TimerTask accelerometerStopUseTask = new TimerTask() {
 //        @Override
 //        public void run() {
 //            accelerometerStopTimer.cancel();
@@ -269,7 +316,7 @@ public class LBSPolicy {
         if (timeStamp == LBS_PRE_DEFAULT) {
             return false;
         }
-        if (System.currentTimeMillis() - timeStamp > policyReferenceValues.acceptedIntervalForNewMotion) {
+        if (System.currentTimeMillis() - timeStamp < policyReferenceValues.acceptedIntervalForNewMotion) {
             return true;
         }
         return false;
@@ -277,7 +324,8 @@ public class LBSPolicy {
 
     private Location getCachedLocation() throws SecurityException {
         Location lastGPSLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-        Location lastNetWorkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+//        Location lastNetWorkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        Location lastNetWorkLocation = getLatestCellTowerLocationsFromDB(1);
         int result = isBetterLocation(lastGPSLocation, lastNetWorkLocation);
         if (result > 0) {
             return lastGPSLocation;
@@ -287,6 +335,7 @@ public class LBSPolicy {
             return null;
         }
     }
+
 
     private void saveLatestMovementTimeStamp(long currentTimeStamp) {
         context.getSharedPreferences(LBS_PREFERENCES, Context.MODE_PRIVATE).edit().putLong(LBS_PRE_TIME, currentTimeStamp).commit();
@@ -314,7 +363,6 @@ public class LBSPolicy {
             // because the user has likely moved
             if (isSignificantlyNewer) {
                 return 1;
-                // If the new location is more than two minutes older, it must be worse
             } else if (isSignificantlyOlder) {
                 return -1;
             }

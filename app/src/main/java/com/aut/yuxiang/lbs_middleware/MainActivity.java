@@ -2,6 +2,7 @@ package com.aut.yuxiang.lbs_middleware;
 
 import android.Manifest;
 import android.Manifest.permission;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -51,7 +52,8 @@ public class MainActivity extends AppCompatActivity
     private FloatingActionButton fab;
     private boolean running = false;
     private Animation animation;
-    private Accuracy accuracy = Accuracy.HIGH_LEVEL_ACCURACY;
+    private Accuracy accuracy;
+    private NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +67,7 @@ public class MainActivity extends AppCompatActivity
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setCheckedItem(R.id.hi_acc);
         animation = new RotateAnimation(0f, 360f, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
@@ -81,11 +83,11 @@ public class MainActivity extends AppCompatActivity
                 if (!running) {
                     Snackbar.make(view, "LBS Start.", Snackbar.LENGTH_SHORT).show();
                     initLocation();
-                    fab.startAnimation(animation);
+//                    fab.startAnimation(animation);
                 } else {
                     Snackbar.make(view, "LBS Stop.", Snackbar.LENGTH_SHORT).show();
                     stopLocation();
-                    animation.cancel();
+//                    animation.cancel();
                 }
                 running = !running;
             }
@@ -134,10 +136,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void startLBS() {
-        LBS.getInstance().startDetect(this, new PolicyReferenceValues(accuracy, 1 * 1000)).getContinuouslyLocation(new LBSLocationListener() {
+        LBS.getInstance().startDetect(this, new PolicyReferenceValues(navigationView.getMenu().findItem(R.id.hi_acc).isChecked() ? Accuracy.HIGH_LEVEL_ACCURACY : Accuracy.LOW_LEVEL_ACCURACY, 1 * 1000)).getContinuouslyLocation(new LBSLocationListener() {
             @Override
             public void onLocationUpdated(Location location) {
-                LogHelper.showLog(TAG, location == null ? "location is null" : location.getAccuracy());
+                LogHelper.showLog(TAG, location == null ? "location is null" : "longitude:" + location.getLongitude() + " : Latitude" + location.getLatitude());
                 addMark(location);
             }
         });
@@ -165,7 +167,7 @@ public class MainActivity extends AppCompatActivity
 
     private void moveCamera(LatLng latLng) {
         if (latLng != null) {
-            CameraPosition cameraPosition = CameraPosition.fromLatLngZoom(latLng, 13);
+            CameraPosition cameraPosition = CameraPosition.fromLatLngZoom(latLng, googleMap.getMaxZoomLevel());
             googleMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         }
 
@@ -208,22 +210,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-//    @Override
-//    public boolean onCreateOptionsMenu(Menu menu) {
-//        // Inflate the menu; this adds items to the action bar if it is present.
-//        getMenuInflater().inflate(R.menu.main, menu);
-//        return true;
-//    }
-
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        return super.onOptionsItemSelected(item);
-//    }
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
@@ -243,6 +229,10 @@ public class MainActivity extends AppCompatActivity
                 accuracy = Accuracy.LOW_LEVEL_ACCURACY;
                 Snackbar.make(fab, "Accuracy is changed to Low Level", Snackbar.LENGTH_SHORT).show();
             }
+        }
+        else if (id == R.id.test)
+        {
+            startActivity(new Intent(this, TestModeActivity.class));
         }
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);

@@ -30,6 +30,7 @@ import com.aut.yuxiang.lbs_middleware.lbs_net.net_api.GeoLocationAPI;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.LBS.LBSLocationListener;
 import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues;
+import com.aut.yuxiang.lbs_middleware.lbs_policy.PolicyReferenceValues.Accuracy;
 import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.AdapterProviderUsabilityListener;
 import com.aut.yuxiang.lbs_middleware.lbs_scenarios_adatper.ProviderUsabilityDetector;
 import com.aut.yuxiang.lbs_middleware.lbs_utils.LogHelper;
@@ -51,7 +52,7 @@ public class CellTowerMechanism extends Mechanism {
     private static final int LTE = 1;
     private static final int CDMA = 2;
     private static final int WCDMA = 3;
-    private static final int LATEST_LOCATIONS_NUMBER = 1;
+    private static final int LATEST_LOCATIONS_NUMBER = 2;
 
     private Context context;
     private int mcc;
@@ -126,20 +127,24 @@ public class CellTowerMechanism extends Mechanism {
     @Override
     public void startMechanism() {
         super.startMechanism();
-        LogHelper.showLog(TAG, "Start Cell Tower Mechanism.");
-        clearCache();
+        if (!running) {
+            LogHelper.showLog(TAG, "Start Cell Tower Mechanism.");
+            clearCache();
+            requestLocationToNetAPI();
+        }
         running = true;
-        requestLocationToNetAPI();
     }
 
 
-    private void sendRequestDelay(long delayTime) {
-        double averageSpeed = getAverageSpeed();
-        if (averageSpeed < 1) {
-            stopMechanism();
-
-        } else {
-            scheduleTimerForSendingRequest(delayTime);
+    private void sendRequestDelay() {
+        if (!checkOtherProviders()) {
+            double averageSpeed = getAverageSpeed();
+            LogHelper.showLog(TAG, "Average Speed: " + averageSpeed);
+            if (averageSpeed < 1) {
+                stopMechanism();
+            } else {
+                scheduleTimerForSendingRequest(getInterval(averageSpeed));
+            }
         }
     }
 
@@ -155,8 +160,8 @@ public class CellTowerMechanism extends Mechanism {
         timer.schedule(task, delayTime);
     }
 
-    private long getInterval() {
-        return 1000 * 3;
+    private long getInterval(double speed) {
+        return 1000 * 10;
     }
 
     private void getOperatorInfo() {
@@ -241,6 +246,7 @@ public class CellTowerMechanism extends Mechanism {
                     mnc = cellInfoLte.getCellIdentity().getMnc();
                     dbm = cellInfoLte.getCellSignalStrength().getDbm();
 //                    lac = this.lac;
+                    continue;
                 } else if (getCellInfoType(cellInfo) == WCDMA) {
                     CellInfoWcdma cellInfoWcdma = (CellInfoWcdma) cellInfo;
                     cellId = cellInfoWcdma.getCellIdentity().getCid();
@@ -285,32 +291,29 @@ public class CellTowerMechanism extends Mechanism {
                 saveCache(location);
                 listener.onLocationUpdated(location);
                 if (running) {
-                    if (!checkOtherProviders())
-                    {
-                        sendRequestDelay(getInterval());
-                    }
+                    sendRequestDelay();
                 }
             }
         }
 
-        private boolean checkOtherProviders() {
-            boolean result;
-            if (result = ProviderUsabilityDetector.getGPSUsability()) {
-                usabilityListener.onProviderAble(false);
-            }
-            return result;
-        }
 
         @Override
         public void onErrorResponse(VolleyError error) {
             if (running) {
 //                stopMechanism();
                 listener.onLocationUpdated(null);
-                sendRequestDelay(getInterval());
+                sendRequestDelay();
             }
         }
     }
 
+    private boolean checkOtherProviders() {
+        boolean result;
+        if (result = (ProviderUsabilityDetector.getGPSUsability()&&values.accuracy== Accuracy.HIGH_LEVEL_ACCURACY)) {
+                usabilityListener.onProviderAble(false);
+        }
+        return result;
+    }
 
     private ArrayList<Location> getLatestCellTowerLocationsFromDB(int limitNum) {
         String table = CellTowerReadingsTable.CELL_TOWER_READINGS_TABLE_NAME;
@@ -330,7 +333,7 @@ public class CellTowerMechanism extends Mechanism {
             result = new ArrayList<>();
             cursor.moveToFirst();
             while (!cursor.isAfterLast()) {
-                Location location = new Location(LocationManager.GPS_PROVIDER);
+                Location location = new Location(LocationManager.NETWORK_PROVIDER);
                 double latitude = cursor.getDouble(cursor.getColumnIndex(CellTowerReadingsTable.LATITUDE));
                 double longitude = cursor.getDouble(cursor.getColumnIndex(CellTowerReadingsTable.LONGITUDE));
                 long time = cursor.getLong(cursor.getColumnIndex(CellTowerReadingsTable.TIME_STAMP));
@@ -383,22 +386,21 @@ public class CellTowerMechanism extends Mechanism {
         double sumOfSpeed = 0;
         ArrayList<Location> latestLocationsList = getLatestCellTowerLocationsFromDB(LATEST_LOCATIONS_NUMBER);
         if (latestLocationsList != null && latestLocationsList.size() == LATEST_LOCATIONS_NUMBER) {
-            for (int i = 0; i < latestLocationsList.size() - 1; i += 2) {
+            for (int i = 0; i < latestLocationsList.size() - 1; i += 1) {
                 Location fistLoc = latestLocationsList.get(i);
                 Location secLoc = latestLocationsList.get(i + 1);
                 double distance = getDistance(fistLoc, secLoc);
-                long time = secLoc.getTime() - fistLoc.getTime();
+                double time = (fistLoc.getTime() - secLoc.getTime()) / 1000;
                 sumOfSpeed += distance / time;
             }
-            LogHelper.showLog(TAG, "Speed: " + sumOfSpeed);
-            return sumOfSpeed / latestLocationsList.size();
+            return sumOfSpeed / (double) latestLocationsList.size();
         } else {
             return Double.MAX_VALUE;
         }
     }
 
     private double getDistance(Location firstLocation, Location secondLocation) {
-        return 0;
+        return firstLocation.distanceTo(secondLocation);
     }
 
 

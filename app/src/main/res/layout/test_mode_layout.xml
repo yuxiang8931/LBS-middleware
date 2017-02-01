@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+
+        <variable
+            name="location"
+            type="com.aut.yuxiang.lbs_middleware.LocationBindingData"/>
+    </data>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="@dimen/root_padding">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            >
+
+            <android.support.v7.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/latitude"/>
+
+            <android.support.v7.widget.AppCompatTextView
+                android:id="@+id/latitude"
+                style="@style/displayvalue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{location.latitude}"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            >
+
+            <android.support.v7.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/Longitude"/>
+
+            <android.support.v7.widget.AppCompatTextView
+                android:id="@+id/longitude"
+                style="@style/displayvalue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{location.longitude}"/>
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            >
+
+            <android.support.v7.widget.AppCompatTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/accuracy"/>
+
+            <android.support.v7.widget.AppCompatTextView
+                android:id="@+id/accuracy"
+                style="@style/displayvalue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{location.accuracy}"/>
+
+        </LinearLayout>
+    </LinearLayout>
+</layout>

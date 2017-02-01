@@ -11,6 +11,13 @@
             android:checkable="true"
             android:icon="@drawable/ic_menu_gallery"
             android:title="Low Accuracy Level"/>
+
+        <item
+            android:id="@+id/test"
+            android:checkable="true"
+            android:icon="@drawable/ic_menu_send"
+            android:title="Test Mode"
+            />
     </group>
 
 </menu>

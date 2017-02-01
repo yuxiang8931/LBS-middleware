@@ -6,4 +6,10 @@
 
     <string name="action_settings">Settings</string>
     <string name="title_activity_maps">Map</string>
+
+    //test mode
+
+    <string name="latitude">Latitude</string>
+    <string name="Longitude">Longitude</string>
+    <string name="accuracy">Accuracy</string>
 </resources>
